@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    xmlns:rim="http://www.blackberry.com/ns/widgets"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    id="com.backata.plugins"
+    version="0.1.0">
+    <name>HLSPlugin</name>
+    <description>HLS Player Plugin for RTVC</description>
+    <license>Apache 2.0</license>
+    <keywords>HLS</keywords>
+
+    <js-module src="www/HLSPlugin.js" name="HLSPlugin">
+        <clobbers target="window.HLSPlugin" />
+    </js-module>
+
+
+    <!-- ios -->
+    <platform name="ios">
+        <config-file target="config.xml" parent="/*">
+            <feature name="HLSPlugin" >
+                <param name="ios-package" value="HLSPlugin"/>
+            </feature>
+        </config-file>
+
+        <header-file src="src/ios/HLSPlugin.h"/>
+        <source-file src="src/ios/HLSPlugin.m"/>
+        
+        <header-file src="src/ios/STKAudioPlayer.h"/>
+        <source-file src="src/ios/STKAudioPlayer.m"/>
+        <header-file src="src/ios/STKAutoRecoveringHttpDataSource.h"/>
+        <source-file src="src/ios/STKAutoRecoveringHttpDataSource.m"/>
+        <header-file src="src/ios/STKCoreFoundationDataSource.h"/>
+        <source-file src="src/ios/STKCoreFoundationDataSource.m"/>
+        <header-file src="src/ios/STKDataSource.h"/>
+        <source-file src="src/ios/STKDataSource.m"/>
+        <header-file src="src/ios/STKDataSourceWrapper.h"/>
+        <source-file src="src/ios/STKDataSourceWrapper.m"/>
+        <header-file src="src/ios/STKHttpDataSource.h"/>
+        <source-file src="src/ios/STKHttpDataSource.m"/>
+        <header-file src="src/ios/STKLocalFileDataSource.h"/>
+        <source-file src="src/ios/STKLocalFileDataSource.m"/>
+        
+        
+        <framework src="AudioTools.framework"/>
+    </platform>
+    
+
+</plugin>
