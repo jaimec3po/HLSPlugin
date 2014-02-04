@@ -10,8 +10,8 @@
     <license>Apache 2.0</license>
     <keywords>HLS</keywords>
 
-    <js-module src="www/HLSPlugin.js" name="HLSPlugin">
-        <clobbers target="window.HLSPlugin" />
+     <js-module src="www/HLSPlugin.js" name="HLSPlugin">
+        <clobbers target="HLSPlugin" />
     </js-module>
 
 
