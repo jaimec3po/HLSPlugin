@@ -10,7 +10,6 @@
 #import <Cordova/CDVPlugin.h>
 
 @interface HLSPlugin : CDVPlugin {
-    
 }
 
 - (void)create:(CDVInvokedUrlCommand*)command;

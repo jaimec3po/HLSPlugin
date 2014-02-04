@@ -12,6 +12,9 @@
 
 - (void)create:(CDVInvokedUrlCommand*)command{
 	NSLog(@"%@", @"HLSPlugin create");
+	
+	CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
 }
 
 - (void)getCurrentPositionAudio:(CDVInvokedUrlCommand*)command{
