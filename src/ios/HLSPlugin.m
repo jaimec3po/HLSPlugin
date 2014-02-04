@@ -10,6 +10,7 @@
 #import "STKAudioPlayer.h"
 #import "STKAutoRecoveringHttpDataSource.h"
 #import "SampleQueueId.h"
+#import <Foundation/Foundation.h>
 
 static STKAudioPlayer *audioPlayer = nil;
 
@@ -74,7 +75,16 @@ static STKAudioPlayer *audioPlayer = nil;
 }
 
 - (void)setVolume:(CDVInvokedUrlCommand*)command{
-	NSLog(@"%@", @"HLSPlugin setVolume");
+	
+    
+    NSString* callbackId = command.callbackId;
+    
+    NSString* mmediaId = [command.arguments objectAtIndex:0];
+    NSNumber* volume =  [command.arguments objectAtIndex:1];
+    
+    NSLog(@"HLSPlayer setting Volume %@  mediaId %@", volume, mmediaId);
+    
+    audioPlayer.volume = [volume intValue];
     
 }
 
