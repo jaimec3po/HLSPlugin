@@ -4,7 +4,7 @@
     xmlns:rim="http://www.blackberry.com/ns/widgets"
     xmlns:android="http://schemas.android.com/apk/res/android"
     id="com.bakata.plugins.HLSPlugin"
-    version="0.1.0">
+    version="0.1.1">
     <name>HLSPlugin</name>
     <description>HLS Player Plugin for RTVC</description>
     <license>Apache 2.0</license>
@@ -26,6 +26,8 @@
         <header-file src="src/ios/HLSPlugin.h"/>
         <source-file src="src/ios/HLSPlugin.m"/>
         
+        <header-file src="src/ios/NSMutableArray+STKAudioPlayer.h"/>
+        <source-file src="src/ios/NSMutableArray+STKAudioPlayer.m"/>
         <header-file src="src/ios/STKAudioPlayer.h"/>
         <source-file src="src/ios/STKAudioPlayer.m"/>
         <header-file src="src/ios/STKAutoRecoveringHttpDataSource.h"/>
@@ -40,6 +42,8 @@
         <source-file src="src/ios/STKHttpDataSource.m"/>
         <header-file src="src/ios/STKLocalFileDataSource.h"/>
         <source-file src="src/ios/STKLocalFileDataSource.m"/>
+        <header-file src="src/ios/STKQueueEntry.h"/>
+        <source-file src="src/ios/STKQueueEntry.m"/>
         
         
         <framework src="AudioToolbox.framework"/>
