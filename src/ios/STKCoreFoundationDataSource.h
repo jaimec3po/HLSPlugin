@@ -44,14 +44,19 @@
 @interface STKCoreFoundationDataSource : STKDataSource
 {
 @protected
+    BOOL isInErrorState;
     CFReadStreamRef stream;
     NSRunLoop* eventsRunLoop;
 }
 
+@property (readonly) BOOL isInErrorState;
+
 -(BOOL) reregisterForEvents;
 
+-(void) open;
 -(void) dataAvailable;
 -(void) eof;
 -(void) errorOccured;
+-(CFStreamStatus) status;
 
 @end

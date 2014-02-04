@@ -4,7 +4,7 @@
  Created by Thong Nguyen on 16/10/2012.
  https://github.com/tumtumtum/audjustable
 
- Copyright (c) 2012 Thong Nguyen (tumtumtum@gmail.com). All rights reserved.
+ Copyright (c) 2012-2014 Thong Nguyen (tumtumtum@gmail.com). All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
@@ -33,13 +33,13 @@
  **********************************************************************************/
 
 #import "STKDataSource.h"
-#import "STKHttpDataSource.h"
+#import "STKHTTPDataSource.h"
 #import "STKDataSourceWrapper.h"
 
-@interface STKAutoRecoveringHttpDataSource : STKDataSourceWrapper
+@interface STKAutoRecoveringHTTPDataSource : STKDataSourceWrapper
 
--(id) initWithHttpDataSource:(STKHttpDataSource*)innerDataSource;
+-(id) initWithHTTPDataSource:(STKHTTPDataSource*)innerDataSource;
 
-@property (readonly) STKHttpDataSource* innerDataSource;
+@property (readonly) STKHTTPDataSource* innerDataSource;
 
 @end
