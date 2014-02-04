@@ -42,7 +42,7 @@
         <source-file src="src/ios/STKLocalFileDataSource.m"/>
         
         
-        <framework src="AudioTools.framework"/>
+        <framework src="AudioToolbox.framework"/>
     </platform>
     
 

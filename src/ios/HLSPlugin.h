@@ -15,6 +15,7 @@
 
 - (void)create:(CDVInvokedUrlCommand*)command;
 - (void)startPlayingAudio:(CDVInvokedUrlCommand*)command;
+- (void)getCurrentPositionAudio:(CDVInvokedUrlCommand*)command;
 - (void)stopPlayingAudio:(CDVInvokedUrlCommand*)command;
 - (void)setVolume:(CDVInvokedUrlCommand*)command;
 

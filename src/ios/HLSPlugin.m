@@ -14,6 +14,10 @@
 	NSLog(@"%@", @"HLSPlugin create");
 }
 
+- (void)getCurrentPositionAudio:(CDVInvokedUrlCommand*)command{
+	NSLog(@"%@", @"HLSPlugin getCurrentPosition");
+}
+
 - (void)startPlayingAudio:(CDVInvokedUrlCommand*)command{
 	NSLog(@"%@", @"HLSPlugin startPlayingAudio");
 }

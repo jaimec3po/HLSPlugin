@@ -38,6 +38,18 @@ HLSPlugin.get = function(id) {
 
 
 /**
+ * Get position of audio.
+ */
+HLSPlugin.prototype.getCurrentPosition = function(success, fail) {
+    var me = this;
+    exec(function(p) {
+        me._position = p;
+        success(p);
+    }, fail, "HLSPlugin", "getCurrentPositionAudio", [this.id]);
+};
+
+
+/**
  * Start or resume playing audio file.
  */
 HLSPlugin.prototype.play = function(options) {
