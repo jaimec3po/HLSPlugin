@@ -3,7 +3,7 @@
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
     xmlns:rim="http://www.blackberry.com/ns/widgets"
     xmlns:android="http://schemas.android.com/apk/res/android"
-    id="com.backata.plugins"
+    id="com.bakata.plugins.HLSPlugin"
     version="0.1.0">
     <name>HLSPlugin</name>
     <description>HLS Player Plugin for RTVC</description>
