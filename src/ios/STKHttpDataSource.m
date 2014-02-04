@@ -32,18 +32,19 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **********************************************************************************/
 
-#import "STKHTTPDataSource.h"
+#import <Foundation/Foundation.h>
+#import "STKHttpDataSource.h"
 #import "STKLocalFileDataSource.h"
 
-@interface STKHTTPDataSource()
+@interface STKHttpDataSource()
 {
 @private
-    long long seekStart;
-    long long relativePosition;
+    int seekStart;
+    int relativePosition;
     long long fileLength;
     int discontinuous;
     NSURL* currentUrl;
-    STKAsyncURLProvider asyncUrlProvider;
+    URLProvider urlProvider;
     NSDictionary* httpHeaders;
     AudioFileTypeID audioFileTypeHint;
 }
@@ -51,24 +52,14 @@
 
 @end
 
-@implementation STKHTTPDataSource
+@implementation STKHttpDataSource
 
 -(id) initWithURL:(NSURL*)urlIn
 {
     return [self initWithURLProvider:^NSURL* { return urlIn; }];
 }
 
--(id) initWithURLProvider:(STKURLProvider)urlProviderIn
-{
-	urlProviderIn = [urlProviderIn copy];
-    
-    return [self initWithAsyncURLProvider:^(STKHTTPDataSource* dataSource, BOOL forSeek, STKURLBlock block)
-    {
-        block(urlProviderIn());
-    }];
-}
-
--(id) initWithAsyncURLProvider:(STKAsyncURLProvider)asyncUrlProviderIn
+-(id) initWithURLProvider:(URLProvider)urlProviderIn
 {
     if (self = [super init])
     {
@@ -76,7 +67,9 @@
         relativePosition = 0;
         fileLength = -1;
         
-        self->asyncUrlProvider = [asyncUrlProviderIn copy];
+        self->urlProvider = [urlProviderIn copy];
+        
+        [self open];
         
         audioFileTypeHint = [STKLocalFileDataSource audioFileTypeHintFromFileExtension:self->currentUrl.pathExtension];
     }
@@ -86,7 +79,7 @@
 
 -(void) dealloc
 {
-    NSLog(@"STKHTTPDataSource dealloc");
+    NSLog(@"STKHttpDataSource dealloc");
 }
 
 -(NSURL*) url
@@ -138,61 +131,40 @@
 
 -(void) dataAvailable
 {
-	if (self.httpStatusCode == 0)
-	{
-		CFTypeRef response = CFReadStreamCopyProperty(stream, kCFStreamPropertyHTTPResponseHeader);
+    if (fileLength < 0)
+    {
+        CFTypeRef response = CFReadStreamCopyProperty(stream, kCFStreamPropertyHTTPResponseHeader);
         
         httpHeaders = (__bridge_transfer NSDictionary*)CFHTTPMessageCopyAllHeaderFields((CFHTTPMessageRef)response);
         
         self.httpStatusCode = CFHTTPMessageGetResponseStatusCode((CFHTTPMessageRef)response);
         
         CFRelease(response);
-		
-		if (self.httpStatusCode == 200)
-		{
-			if (seekStart == 0)
-			{
-				fileLength = (long long)[[httpHeaders objectForKey:@"Content-Length"] integerValue];
-			}
-			
-			NSString* contentType = [httpHeaders objectForKey:@"Content-Type"];
-			AudioFileTypeID typeIdFromMimeType = [STKHTTPDataSource audioFileTypeHintFromMimeType:contentType];
-			
-			if (typeIdFromMimeType != 0)
-			{
-				audioFileTypeHint = typeIdFromMimeType;
-			}
-		}
-		else if (self.httpStatusCode == 206)
-		{
-			NSString* contentRange = [httpHeaders objectForKey:@"Content-Range"];
-			NSArray* components = [contentRange componentsSeparatedByString:@"/"];
-			
-			if (components.count == 2)
-			{
-				fileLength = [[components objectAtIndex:1] integerValue];
-			}
-		}
-		else if (self.httpStatusCode == 416)
-		{
-			if (self.length >= 0)
-			{
-				seekStart = self.length;
-			}
-			
-			[self eof];
-			
-			return;
-		}
-		else if (self.httpStatusCode >= 300)
-		{
-			[self errorOccured];
-			
-			return;
-		}
-	}
-	
-	[super dataAvailable];
+        
+        if (self.httpStatusCode == 200)
+        {
+            if (seekStart == 0)
+            {
+                fileLength = (long long)[[httpHeaders objectForKey:@"Content-Length"] integerValue];
+            }
+            
+            NSString* contentType = [httpHeaders objectForKey:@"Content-Type"];
+            AudioFileTypeID typeIdFromMimeType = [STKHttpDataSource audioFileTypeHintFromMimeType:contentType];
+            
+            if (typeIdFromMimeType != 0)
+            {
+                audioFileTypeHint = typeIdFromMimeType;
+            }
+        }
+        else
+        {
+            [self errorOccured];
+            
+            return;
+        }
+    }
+    
+    [super dataAvailable];
 }
 
 -(long long) position
@@ -217,16 +189,13 @@
         CFReadStreamClose(stream);
         CFRelease(stream);
     }
-	
-    NSAssert([NSRunLoop currentRunLoop] == eventsRunLoop, @"Seek called on wrong thread");
     
     stream = 0;
     relativePosition = 0;
-    seekStart = offset;
+    seekStart = (int)offset;
     
-    self->isInErrorState = NO;
-    
-    [self openForSeek:YES];
+    [self open];
+    [self reregisterForEvents];
 }
 
 -(int) readIntoBuffer:(UInt8*)buffer withSize:(int)size
@@ -250,99 +219,75 @@
 
 -(void) open
 {
-    return [self openForSeek:NO];
-}
-
--(void) openForSeek:(BOOL)forSeek
-{
-    asyncUrlProvider(self, forSeek, ^(NSURL* url)
+    self->currentUrl = urlProvider();
+    
+    CFHTTPMessageRef message = CFHTTPMessageCreateRequest(NULL, (CFStringRef)@"GET", (__bridge CFURLRef)self->currentUrl, kCFHTTPVersion1_1);
+    
+    if (seekStart > 0)
     {
-        self->currentUrl = url;
-
-        if (url == nil)
-        {
-            return;
-        }
-
-        CFHTTPMessageRef message = CFHTTPMessageCreateRequest(NULL, (CFStringRef)@"GET", (__bridge CFURLRef)self->currentUrl, kCFHTTPVersion1_1);
-
-        if (seekStart > 0)
-        {
-            CFHTTPMessageSetHeaderFieldValue(message, CFSTR("Range"), (__bridge CFStringRef)[NSString stringWithFormat:@"bytes=%lld-", seekStart]);
-
-            discontinuous = YES;
-        }
-
-        stream = CFReadStreamCreateForHTTPRequest(NULL, message);
-
-        if (stream == nil)
-        {
-            CFRelease(message);
-
-            [self errorOccured];
-
-            return;
-        }
-
-        if (!CFReadStreamSetProperty(stream, kCFStreamPropertyHTTPShouldAutoredirect, kCFBooleanTrue))
-        {
-            CFRelease(message);
-
-            [self errorOccured];
-
-            return;
-        }
-
-        // Proxy support
-
-        CFDictionaryRef proxySettings = CFNetworkCopySystemProxySettings();
-        CFReadStreamSetProperty(stream, kCFStreamPropertyHTTPProxy, proxySettings);
-        CFRelease(proxySettings);
-
-        // SSL support
-
-        if ([self->currentUrl.scheme caseInsensitiveCompare:@"https"] == NSOrderedSame)
-        {
-            NSDictionary* sslSettings = [NSDictionary dictionaryWithObjectsAndKeys:
-            (NSString*)kCFStreamSocketSecurityLevelNegotiatedSSL, kCFStreamSSLLevel,
-            [NSNumber numberWithBool:YES], kCFStreamSSLAllowsExpiredCertificates,
-            [NSNumber numberWithBool:YES], kCFStreamSSLAllowsExpiredRoots,
-            [NSNumber numberWithBool:YES], kCFStreamSSLAllowsAnyRoot,
-            [NSNumber numberWithBool:NO], kCFStreamSSLValidatesCertificateChain,
-            [NSNull null], kCFStreamSSLPeerName,
-            nil];
-
-            CFReadStreamSetProperty(stream, kCFStreamPropertySSLSettings, (__bridge CFTypeRef)sslSettings);
-        }
-
-        [self reregisterForEvents];
+        CFHTTPMessageSetHeaderFieldValue(message, CFSTR("Range"), (__bridge CFStringRef)[NSString stringWithFormat:@"bytes=%d-", seekStart]);
         
-		self.httpStatusCode = 0;
-		
-        // Open
-
-        if (!CFReadStreamOpen(stream))
-        {
-            CFRelease(stream);
-            CFRelease(message);
-
-            [self errorOccured];
-
-            return;
-        }
-        
-        self->isInErrorState = NO;
-        
+        discontinuous = YES;
+    }
+    
+    stream = CFReadStreamCreateForHTTPRequest(NULL, message);
+    
+    if (stream == nil)
+    {
         CFRelease(message);
-    });
+        
+        [self errorOccured];
+        
+        return;
+    }
+    
+	if (!CFReadStreamSetProperty(stream, kCFStreamPropertyHTTPShouldAutoredirect, kCFBooleanTrue))
+    {
+        CFRelease(message);
+        
+        [self errorOccured];
+        
+        return;
+    }
+    
+    // Proxy support
+    
+    CFDictionaryRef proxySettings = CFNetworkCopySystemProxySettings();
+    CFReadStreamSetProperty(stream, kCFStreamPropertyHTTPProxy, proxySettings);
+    CFRelease(proxySettings);
+    
+    // SSL support
+    
+    if ([self->currentUrl.scheme caseInsensitiveCompare:@"https"] == NSOrderedSame)
+    {
+        NSDictionary* sslSettings = [NSDictionary dictionaryWithObjectsAndKeys:
+                                     (NSString*)kCFStreamSocketSecurityLevelNegotiatedSSL, kCFStreamSSLLevel,
+                                     [NSNumber numberWithBool:YES], kCFStreamSSLAllowsExpiredCertificates,
+                                     [NSNumber numberWithBool:YES], kCFStreamSSLAllowsExpiredRoots,
+                                     [NSNumber numberWithBool:YES], kCFStreamSSLAllowsAnyRoot,
+                                     [NSNumber numberWithBool:NO], kCFStreamSSLValidatesCertificateChain,
+                                     [NSNull null], kCFStreamSSLPeerName,
+                                     nil];
+        
+        CFReadStreamSetProperty(stream, kCFStreamPropertySSLSettings, (__bridge CFTypeRef)sslSettings);
+    }
+    
+    // Open
+    
+    if (!CFReadStreamOpen(stream))
+    {
+        CFRelease(stream);
+        CFRelease(message);
+        
+        [self errorOccured];
+        
+        return;
+    }
+    
+    CFRelease(message);
 }
 
--(NSRunLoop*) eventsRunLoop
-{
-    return self->eventsRunLoop;
-}
-
--(NSString*) description
+- (NSString *)description
 {
     return [NSString stringWithFormat:@"HTTP data source with file length: %lld and position: %lld", self.length, self.position];
 }

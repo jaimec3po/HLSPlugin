@@ -6,6 +6,7 @@
 //  Copyright (c) 2014 Thong Nguyen. All rights reserved.
 //
 
+#import <Foundation/Foundation.h>
 #import "STKQueueEntry.h"
 #import "STKDataSource.h"
 

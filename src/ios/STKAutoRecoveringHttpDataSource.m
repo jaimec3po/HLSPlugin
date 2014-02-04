@@ -4,7 +4,7 @@
  Created by Thong Nguyen on 16/10/2012.
  https://github.com/tumtumtum/audjustable
  
- Copyright (c) 2012-2014 Thong Nguyen (tumtumtum@gmail.com). All rights reserved.
+ Copyright (c) 2012 Thong Nguyen (tumtumtum@gmail.com). All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
@@ -40,14 +40,14 @@
 #import <netdb.h>
 #import <Foundation/Foundation.h>
 #import <SystemConfiguration/SystemConfiguration.h>
-#import "STKAutoRecoveringHTTPDataSource.h"
+#import "STKAutoRecoveringHttpDataSource.h"
 
-#define MAX_IMMEDIATE_RECONNECT_ATTEMPTS (2)
+#define MAX_IMMEDIATE_RECONNECT_ATTEMPTS (8)
+#define MAX_ATTEMPTS_WITH_SERVER_ERROR (MAX_IMMEDIATE_RECONNECT_ATTEMPTS + 2)
 
-@interface STKAutoRecoveringHTTPDataSource()
+@interface STKAutoRecoveringHttpDataSource()
 {
-    int serial;
-	int waitSeconds;
+	int reconnectAttempts;
     BOOL waitingForNetwork;
     SCNetworkReachabilityRef reachabilityRef;
 }
@@ -60,25 +60,25 @@ static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkReach
 {
     @autoreleasepool
     {
-        STKAutoRecoveringHTTPDataSource* dataSource = (__bridge STKAutoRecoveringHTTPDataSource*)info;
+        STKAutoRecoveringHttpDataSource* dataSource = (__bridge STKAutoRecoveringHttpDataSource*)info;
         
         [dataSource reachabilityChanged];
     }
 }
 
-@implementation STKAutoRecoveringHTTPDataSource
+@implementation STKAutoRecoveringHttpDataSource
 
--(STKHTTPDataSource*) innerHTTPDataSource
+-(STKHttpDataSource*) innerHttpDataSource
 {
-    return (STKHTTPDataSource*)self.innerDataSource;
+    return (STKHttpDataSource*)self.innerDataSource;
 }
 
 -(id) initWithDataSource:(STKDataSource *)innerDataSource
 {
-    return [self initWithHTTPDataSource:(STKHTTPDataSource*)innerDataSource];
+    return [self initWithHttpDataSource:(STKHttpDataSource*)innerDataSource];
 }
 
--(id) initWithHTTPDataSource:(STKHTTPDataSource*)innerDataSourceIn
+-(id) initWithHttpDataSource:(STKHttpDataSource*)innerDataSourceIn
 {
     if (self = [super initWithDataSource:innerDataSourceIn])
     {
@@ -122,8 +122,6 @@ static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkReach
 
 -(void) unregisterForEvents
 {
-    [super unregisterForEvents];
-    
     [self stopNotifier];
 }
 
@@ -132,7 +130,7 @@ static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkReach
     if (reachabilityRef != NULL)
     {
         SCNetworkReachabilitySetCallback(reachabilityRef, NULL, NULL);
-        SCNetworkReachabilityUnscheduleFromRunLoop(reachabilityRef, [self.innerDataSource.eventsRunLoop getCFRunLoop], kCFRunLoopDefaultMode);
+        SCNetworkReachabilityUnscheduleFromRunLoop(reachabilityRef, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
     }
 }
 
@@ -150,7 +148,7 @@ static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkReach
 
 -(void) dealloc
 {
-    NSLog(@"STKAutoRecoveringHTTPDataSource dealloc");
+    NSLog(@"STKAutoRecoveringHttpDataSource dealloc");
     
     self.innerDataSource.delegate = nil;
     
@@ -170,33 +168,22 @@ static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkReach
     {
         waitingForNetwork = NO;
         
-        [self attemptReconnectWithSerial:@(serial)];
+        [self attemptReconnect];
     }
 }
 
 -(void) dataSourceDataAvailable:(STKDataSource*)dataSource
 {
-    serial++;
-    waitSeconds = 1;
-
+    reconnectAttempts = 0;
+    
     [super dataSourceDataAvailable:dataSource];
 }
 
--(void) attemptReconnectWithSerial:(NSNumber*)serialIn
+-(void) attemptReconnect
 {
-    if (serialIn.intValue != self->serial)
-    {
-        return;
-    }
-    
-    NSLog(@"attemptReconnect %lld/%lld", self.position, self.length);
+    reconnectAttempts++;
     
     [self seekToOffset:self.position];
-}
-
--(void) attemptReconnectWithTimer:(NSTimer*)timer
-{
-    [self attemptReconnectWithSerial:(NSNumber*)timer.userInfo];
 }
 
 -(void) processRetryOnError
@@ -208,29 +195,23 @@ static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkReach
         return;
     }
     
-	waitingForNetwork = NO;
-	
-    NSRunLoop* runLoop = self.innerDataSource.eventsRunLoop;
-    
-    if (runLoop == nil)
+    if (!(self.innerDataSource.httpStatusCode >= 200 && self.innerDataSource.httpStatusCode <= 299) && reconnectAttempts >= MAX_ATTEMPTS_WITH_SERVER_ERROR)
     {
-        [self performSelector:@selector(attemptReconnectWithSerial:) withObject:@(serial) afterDelay:waitSeconds];
+        [super dataSourceErrorOccured:self];
+    }
+    else if (reconnectAttempts > MAX_IMMEDIATE_RECONNECT_ATTEMPTS)
+    {
+        [self performSelector:@selector(attemptReconnect) withObject:nil afterDelay:5];
     }
     else
     {
-        NSTimer* timer = [NSTimer timerWithTimeInterval:waitSeconds target:self selector:@selector(attemptReconnectWithTimer:) userInfo:@(serial) repeats:NO];
-        
-        [runLoop addTimer:timer forMode:NSRunLoopCommonModes];
+        [self attemptReconnect];
     }
-    
-    waitSeconds = MIN(waitSeconds + 1, 5);
 }
 
 -(void) dataSourceEof:(STKDataSource*)dataSource
 {
-	NSLog(@"dataSourceEof");
-	
-    if ([self position] < [self length])
+    if ([self position] != [self length])
     {
         [self processRetryOnError];
         
@@ -242,8 +223,6 @@ static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkReach
 
 -(void) dataSourceErrorOccured:(STKDataSource*)dataSource
 {
-    NSLog(@"dataSourceErrorOccured");
-    
     if (self.innerDataSource.httpStatusCode == 416 /* Range out of bounds */)
     {
         [super dataSourceEof:dataSource];
@@ -252,11 +231,13 @@ static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkReach
     {
         [self processRetryOnError];
     }
+    
 }
 
 -(NSString*) description
 {
-    return [NSString stringWithFormat:@"HTTP data source with file length: %lld and position: %lld", self.length, self.position];
+    return [NSString stringWithFormat:@"Auto-recovering HTTP data source with file length: %lld and position: %lld", self.length, self.position];
+    
 }
 
 @end

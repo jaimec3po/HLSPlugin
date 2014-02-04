@@ -32,6 +32,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **********************************************************************************/
 
+#import <Foundation/Foundation.h>
 #import "STKCoreFoundationDataSource.h"
 
 static void ReadStreamCallbackProc(CFReadStreamRef stream, CFStreamEventType eventType, void* inClientInfo)
@@ -60,11 +61,6 @@ static void ReadStreamCallbackProc(CFReadStreamRef stream, CFStreamEventType eve
 
 @implementation STKCoreFoundationDataSource
 
--(BOOL) isInErrorState
-{
-    return self->isInErrorState;
-}
-
 -(void) dataAvailable
 {
     [self.delegate dataSourceDataAvailable:self];
@@ -77,8 +73,6 @@ static void ReadStreamCallbackProc(CFReadStreamRef stream, CFStreamEventType eve
 
 -(void) errorOccured
 {
-    self->isInErrorState = YES;
-    
     [self.delegate dataSourceErrorOccured:self];
 }
 
@@ -86,10 +80,7 @@ static void ReadStreamCallbackProc(CFReadStreamRef stream, CFStreamEventType eve
 {
     if (stream)
     {
-        if (eventsRunLoop)
-        {
-        	[self unregisterForEvents];
-        }
+        [self unregisterForEvents];
         
         [self close];
         
@@ -106,10 +97,6 @@ static void ReadStreamCallbackProc(CFReadStreamRef stream, CFStreamEventType eve
         
         stream = 0;
     }
-}
-
--(void) open
-{
 }
 
 -(void) seekToOffset:(long long)offset
@@ -147,21 +134,19 @@ static void ReadStreamCallbackProc(CFReadStreamRef stream, CFStreamEventType eve
 -(BOOL) registerForEvents:(NSRunLoop*)runLoop
 {
     eventsRunLoop = runLoop;
-    
-    if (!stream)
+ 
+    if (stream)
     {
-        [self open];
+        CFStreamClientContext context = {0, (__bridge void*)self, NULL, NULL, NULL};
         
+        CFReadStreamSetClient(stream, kCFStreamEventHasBytesAvailable | kCFStreamEventErrorOccurred | kCFStreamEventEndEncountered, ReadStreamCallbackProc, &context);
+        
+        CFReadStreamScheduleWithRunLoop(stream, [eventsRunLoop getCFRunLoop], kCFRunLoopCommonModes);
+    
         return YES;
     }
- 
-    CFStreamClientContext context = {0, (__bridge void*)self, NULL, NULL, NULL};
     
-    CFReadStreamSetClient(stream, kCFStreamEventHasBytesAvailable | kCFStreamEventErrorOccurred | kCFStreamEventEndEncountered, ReadStreamCallbackProc, &context);
-    
-    CFReadStreamScheduleWithRunLoop(stream, [eventsRunLoop getCFRunLoop], kCFRunLoopCommonModes);
-
-    return YES;
+    return NO;
 }
 
 -(BOOL) hasBytesAvailable
@@ -172,16 +157,6 @@ static void ReadStreamCallbackProc(CFReadStreamRef stream, CFStreamEventType eve
     }
     
     return CFReadStreamHasBytesAvailable(stream);
-}
-
--(CFStreamStatus) status
-{
-    if (stream)
-    {
-        return CFReadStreamGetStatus(stream);
-    }
-    
-    return 0;
 }
 
 @end
