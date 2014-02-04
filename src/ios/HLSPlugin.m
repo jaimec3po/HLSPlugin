@@ -40,15 +40,19 @@ static STKAudioPlayer *audioPlayer = nil;
     
     @synchronized(self) {
         if (audioPlayer == nil) {
-            audioPlayer = [[STKAudioPlayer alloc] init];
+            //audioPlayer = [[STKAudioPlayer alloc] init];
             NSURL* url = [NSURL URLWithString:self.resourcePath];
             
-            STKAutoRecoveringHttpDataSource* dataSource = [[STKAutoRecoveringHttpDataSource alloc] initWithHttpDataSource:(STKHttpDataSource*)[audioPlayer dataSourceFromURL:url]];
+            audioPlayer = [[STKAudioPlayer alloc] initWithOptions:STKAudioPlayerOptionFlushQueueOnSeek|STKAudioPlayerOptionEnableVolumeMixer];
+            audioPlayer.meteringEnabled = YES;
+            audioPlayer.volume = 1.0;
+            
+            STKDataSource* dataSource = [STKAudioPlayer dataSourceFromURL:url];
             
             [audioPlayer setDataSource:dataSource withQueueItemId:[[SampleQueueId alloc] initWithUrl:url andCount:0]];
             return;
         } else {
-            if(audioPlayer.state != AudioPlayerStatePlaying)
+            if(audioPlayer.state != STKAudioPlayerStatePlaying)
             {
                 NSLog(@"%@",@"Resume ");
                 [audioPlayer resume];
@@ -61,7 +65,7 @@ static STKAudioPlayer *audioPlayer = nil;
 - (void)stopPlayingAudio:(CDVInvokedUrlCommand*)command{
 	NSLog(@"%@", @"HLSPlugin stopPlayinAudio");
     
-    if(audioPlayer.state != AudioPlayerStatePaused)
+    if(audioPlayer.state != STKAudioPlayerStatePaused)
     {
         NSLog(@"%@",@"Stop ");
         [audioPlayer pause];
