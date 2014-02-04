@@ -10,7 +10,11 @@
 #import <Cordova/CDVPlugin.h>
 
 @interface HLSPlugin : CDVPlugin {
+    
 }
+
+@property(nonatomic, retain) NSString* mediaId;
+@property(nonatomic, retain) NSString* resourcePath;
 
 - (void)create:(CDVInvokedUrlCommand*)command;
 - (void)startPlayingAudio:(CDVInvokedUrlCommand*)command;

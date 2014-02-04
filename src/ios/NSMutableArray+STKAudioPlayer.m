@@ -6,7 +6,6 @@
 //  Copyright (c) 2014 Thong Nguyen. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
 #import "NSMutableArray+STKAudioPlayer.h"
 
 @implementation NSMutableArray (STKAudioPlayer)

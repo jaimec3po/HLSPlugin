@@ -32,7 +32,6 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **********************************************************************************/
 
-#import <Foundation/Foundation.h>
 #import "STKLocalFileDataSource.h"
 
 @interface STKLocalFileDataSource()
@@ -53,8 +52,6 @@
     if (self = [super init])
     {
         self.filePath = filePathIn;
-        
-        [self open];
         
         audioFileTypeHint = [STKLocalFileDataSource audioFileTypeHintFromFileExtension:filePathIn.pathExtension];
     }
@@ -108,6 +105,8 @@
 {
     if (stream)
     {
+        [self unregisterForEvents];
+
         CFReadStreamClose(stream);
         
         stream = 0;
@@ -118,6 +117,8 @@
 {
     if (stream)
     {
+        [self unregisterForEvents];
+        
         CFReadStreamClose(stream);
         CFRelease(stream);
         
@@ -147,6 +148,8 @@
         length = number.longLongValue;
     }
     
+    [self reregisterForEvents];
+
     CFReadStreamOpen(stream);
 }
 
@@ -195,7 +198,6 @@
         
         [self close];        
         [self open];
-        [self reregisterForEvents];
     }
     
     if (CFReadStreamSetProperty(stream, kCFStreamPropertyFileCurrentOffset, (__bridge CFTypeRef)[NSNumber numberWithLongLong:offset]) != TRUE)

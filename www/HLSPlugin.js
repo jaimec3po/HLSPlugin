@@ -125,26 +125,6 @@ HLSPlugin.prototype.getCurrentPosition = function(success, fail) {
     }, fail, "HLSPlugin", "getCurrentPositionAudio", [this.id]);
 };
 
-/**
- * Start recording audio file.
- */
-HLSPlugin.prototype.startRecord = function() {
-    exec(null, this.errorCallback, "HLSPlugin", "startRecordingAudio", [this.id, this.src]);
-};
-
-/**
- * Stop recording audio file.
- */
-HLSPlugin.prototype.stopRecord = function() {
-    exec(null, this.errorCallback, "HLSPlugin", "stopRecordingAudio", [this.id]);
-};
-
-/**
- * Release the resources.
- */
-HLSPlugin.prototype.release = function() {
-    exec(null, this.errorCallback, "HLSPlugin", "release", [this.id]);
-};
 
 /**
  * Adjust the volume.
