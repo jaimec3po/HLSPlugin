@@ -26,7 +26,7 @@
         <header-file src="src/ios/HLSPlugin.h"/>
         <source-file src="src/ios/HLSPlugin.m"/>
         
-        <header-file src="src/ios/NSMutableArray+STKAudioPlayer.h"/>
+        <!--<header-file src="src/ios/NSMutableArray+STKAudioPlayer.h"/>
         <source-file src="src/ios/NSMutableArray+STKAudioPlayer.m"/>
         <header-file src="src/ios/STKAudioPlayer.h"/>
         <source-file src="src/ios/STKAudioPlayer.m"/>
@@ -43,7 +43,7 @@
         <header-file src="src/ios/STKLocalFileDataSource.h"/>
         <source-file src="src/ios/STKLocalFileDataSource.m"/>
         <header-file src="src/ios/STKQueueEntry.h"/>
-        <source-file src="src/ios/STKQueueEntry.m"/>
+        <source-file src="src/ios/STKQueueEntry.m"/> -->
         
         
         <framework src="AudioToolbox.framework"/>
