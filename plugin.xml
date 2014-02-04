@@ -49,7 +49,6 @@
         <framework src="AudioToolbox.framework"/>
         <framework src="Foundation.framework"/>
         <framework src="UIKit.framework"/>
-        <framework src="XCTest.framework"/>
     </platform>
     
 
