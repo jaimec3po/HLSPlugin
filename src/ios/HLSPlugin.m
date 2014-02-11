@@ -13,7 +13,7 @@
 #import <Foundation/Foundation.h>
 #import <MediaPlayer/MediaPlayer.h>
 
-static STKAudioPlayer *audioPlayer = nil;
+static MPMoviePlayerController *moviePlayer = nil;
 
 
 
