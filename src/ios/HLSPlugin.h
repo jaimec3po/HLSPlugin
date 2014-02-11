@@ -8,6 +8,7 @@
 
 #import <UIKit/UIKit.h>
 #import <Cordova/CDVPlugin.h>
+#import <MediaPlayer/MediaPlayer.h>
 
 @interface HLSPlugin : CDVPlugin {
     
@@ -21,5 +22,8 @@
 - (void)getCurrentPositionAudio:(CDVInvokedUrlCommand*)command;
 - (void)stopPlayingAudio:(CDVInvokedUrlCommand*)command;
 - (void)setVolume:(CDVInvokedUrlCommand*)command;
+
+@property(strong, nonatomic) MPMoviePlayerController *moviePlayer;
+
 
 @end

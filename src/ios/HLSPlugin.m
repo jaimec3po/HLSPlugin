@@ -11,6 +11,7 @@
 #import "STKAutoRecoveringHttpDataSource.h"
 #import "SampleQueueId.h"
 #import <Foundation/Foundation.h>
+#import <MediaPlayer/MediaPlayer.h>
 
 static STKAudioPlayer *audioPlayer = nil;
 
@@ -19,6 +20,7 @@ static STKAudioPlayer *audioPlayer = nil;
 @implementation HLSPlugin
 @synthesize mediaId;
 @synthesize resourcePath;
+@synthesize moviePlayer;
 
 - (void)create:(CDVInvokedUrlCommand*)command{
 	
@@ -39,6 +41,7 @@ static STKAudioPlayer *audioPlayer = nil;
 - (void)startPlayingAudio:(CDVInvokedUrlCommand*)command{
 	NSLog(@"%@", @"HLSPlugin startPlayingAudio");
     
+    /*
     @synchronized(self) {
         if (audioPlayer == nil) {
             //audioPlayer = [[STKAudioPlayer alloc] init];
@@ -59,6 +62,25 @@ static STKAudioPlayer *audioPlayer = nil;
                 [audioPlayer resume];
             }
         }
+    } */
+    
+    @synchronized(self) {
+        if (moviePlayer == nil) {
+            //audioPlayer = [[STKAudioPlayer alloc] init];
+            NSURL* url = [NSURL URLWithString:self.resourcePath];
+            
+            moviePlayer = [[MPMoviePlayerController alloc] initWithContentURL:url];
+            moviePlayer.shouldAutoplay = YES;
+            
+            [moviePlayer play];
+            return;
+        } else {
+            if(moviePlayer.playbackState != MPMoviePlaybackStatePlaying)
+            {
+                NSLog(@"%@",@"Resume ");
+                [moviePlayer play];
+            }
+        }
     }
     
 }
@@ -66,10 +88,18 @@ static STKAudioPlayer *audioPlayer = nil;
 - (void)stopPlayingAudio:(CDVInvokedUrlCommand*)command{
 	NSLog(@"%@", @"HLSPlugin stopPlayinAudio");
     
-    if(audioPlayer.state != STKAudioPlayerStatePaused)
+    /*
+     if(audioPlayer.state != STKAudioPlayerStatePaused)
     {
         NSLog(@"%@",@"Stop ");
         [audioPlayer pause];
+    }
+     */
+    
+    if(moviePlayer.playbackState != MPMoviePlaybackStatePaused)
+    {
+        NSLog(@"%@",@"Stop ");
+        [moviePlayer pause];
     }
     
 }
@@ -84,8 +114,11 @@ static STKAudioPlayer *audioPlayer = nil;
     
     NSLog(@"HLSPlayer setting Volume %@  mediaId %@", volume, mmediaId);
     
-    audioPlayer.volume = [volume intValue];
+    //audioPlayer.volume = [volume intValue];
     
+    //[moviePlayer ]
+    
+    [[MPMusicPlayerController applicationMusicPlayer] setVolume:volume.floatValue];
 }
 
 
