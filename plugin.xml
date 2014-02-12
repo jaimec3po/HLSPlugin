@@ -4,7 +4,7 @@
     xmlns:rim="http://www.blackberry.com/ns/widgets"
     xmlns:android="http://schemas.android.com/apk/res/android"
     id="com.bakata.plugins.HLSPlugin"
-    version="1.0.6">
+    version="1.1.0">
     <name>HLSPlugin</name>
     <description>HLS Player Plugin for RTVC</description>
     <license>Apache 2.0</license>
@@ -13,6 +13,36 @@
      <js-module src="www/HLSPlugin.js" name="HLSPlugin">
         <clobbers target="window.HLSPlugin" />
     </js-module>
+
+	<!-- android -->
+    <platform name="android">
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="HLSPlugin" >
+                <param name="android-package" value="com.bakata.plugins.HLSPlugin"/>
+            </feature>
+        </config-file>
+        
+        <config-file target="AndroidManifest.xml" parent="/*">
+            <uses-permission android:name="android.permission.RECORD_AUDIO" />
+            <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+            <uses-permission android:name="android.permission.INTERNET" />
+    		<uses-permission android:name="android.permission.BROADCAST_STICKY" />
+    		<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    		<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />    		
+        </config-file>
+        
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">    		
+    		<service android:name="com.bakata.plugins.HLSPlayerService" android:enabled="true" android:exported="false" />
+        </config-file>
+        
+        <config-file target="res/values/strings.xml" parent="/*">
+        	
+        </config-file>
+        
+        <source-file src="src/android/HLSPlugin.java" target-dir="src/com/bakata/plugins" />
+        <source-file src="src/android/HLSPlayerService.java" target-dir="src/com/bakata/plugins" />
+
+     </platform>
 
 
     <!-- ios -->
