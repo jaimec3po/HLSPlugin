@@ -70,6 +70,7 @@ public class HLSPlayerService extends Service {
 				mMediaPlayer = new MediaPlayer(getApplicationContext());
 				//mMediaPlayer.setDisplay(new SurfaceView(this).getHolder());
 				mMediaPlayer.setDataSource(path);
+				mMediaPlayer.setAdaptiveStream(true);
 				mMediaPlayer.setBufferSize(1024 * 512);
 				mMediaPlayer.prepare();
 				
@@ -82,21 +83,13 @@ public class HLSPlayerService extends Service {
 						// TODO Auto-generated method stub
 						
 						Log.i(TAG, "Buffer actualizado  al " + percent +"%");
-						if(percent >= 45 && !isPlaying()){
+						if(percent >= 20 && !isPlaying()){
 							mMediaPlayer.start();
 						}
 				
 					}
 				});
-				//mMediaPlayer.prepare();
-				//mMediaPlayer.getMetadata();
 				
-				//mMediaPlayer.start();
-				
-				//mMediaPlayer = new MediaPlayer(getApplicationContext());
-				//mMediaPlayer.setDataSource(path);
-				//mMediaPlayer.prepare();
-				//mMediaPlayer.start();
 
 			} catch (IllegalArgumentException e) {
 				e.printStackTrace();
