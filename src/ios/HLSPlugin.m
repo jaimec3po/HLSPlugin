@@ -99,7 +99,8 @@ static MPMoviePlayerController *moviePlayer = nil;
     if(moviePlayer.playbackState != MPMoviePlaybackStatePaused)
     {
         NSLog(@"%@",@"Stop ");
-        [moviePlayer pause];
+        [moviePlayer stop];
+        moviePlayer = nil;
     }
     
 }

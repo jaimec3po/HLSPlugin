@@ -110,7 +110,7 @@ public class HLSPlugin extends CordovaPlugin {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		stopService();
+		//stopService();
 		this.cordova.getActivity().unbindService(mConnection);
 		Log.i(TAG, "onDestroy - Desconectarse desde el Plugin");
 	}
