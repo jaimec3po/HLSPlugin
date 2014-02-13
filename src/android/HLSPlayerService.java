@@ -2,7 +2,9 @@ package com.bakata.plugins;
 
 import java.io.IOException;
 
+import io.vov.vitamio.LibsChecker;
 import io.vov.vitamio.MediaPlayer;
+import io.vov.vitamio.MediaPlayer.OnBufferingUpdateListener;
 import io.vov.vitamio.MediaPlayer.OnErrorListener;
 
 import android.app.Service;
@@ -13,6 +15,7 @@ import android.net.NetworkInfo;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
+import android.view.SurfaceView;
 
 public class HLSPlayerService extends Service {
 	
@@ -30,26 +33,70 @@ public class HLSPlayerService extends Service {
 	private static final String PATH = "http://cdns840stu0010.multistream.net/rtvcRadionicalive/smil:rtvcRadionica.smil/playlist.m3u8";
 	
 	
+	private String path = PATH;
+	
 	@Override
 	public void onCreate() {
+		Log.i(TAG, "CREATE");
 		
 	}
+	
+
+	public String getPath() {
+		return path;
+	}
+
+	public void setPath(String path) {
+		this.path = path;
+	}
+
+
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.i(TAG, "Received start id " + startId + ": " + intent);
 
-
-		stopMediaPlayer();
+		if(mMediaPlayer != null){
+			Log.i(TAG, "Retornando el que ya estaba");
+			return START_STICKY;
+		}
 
 		if (isNetworkOnline()) {
-			Log.e(TAG, "CONECTADO");
+			Log.i(TAG, "CONECTADO A INTERNET");
 			try {
-				mMediaPlayer = new MediaPlayer(this);
-				mMediaPlayer.setDataSource(PATH);
-				mMediaPlayer.setOnErrorListener(onErrorListener);
+				
+				Log.i(TAG, "Iniciando Streaming desde " + path);
+				
+				mMediaPlayer = new MediaPlayer(getApplicationContext());
+				//mMediaPlayer.setDisplay(new SurfaceView(this).getHolder());
+				mMediaPlayer.setDataSource(path);
+				mMediaPlayer.setBufferSize(1024 * 512);
 				mMediaPlayer.prepare();
-				mMediaPlayer.start();
+				
+				
+				mMediaPlayer.setOnErrorListener(onErrorListener);
+				mMediaPlayer.setOnBufferingUpdateListener(new OnBufferingUpdateListener() {
+					
+					@Override
+					public void onBufferingUpdate(MediaPlayer mp, int percent) {
+						// TODO Auto-generated method stub
+						
+						Log.i(TAG, "Buffer actualizado  al " + percent +"%");
+						if(percent >= 45 && !isPlaying()){
+							mMediaPlayer.start();
+						}
+				
+					}
+				});
+				//mMediaPlayer.prepare();
+				//mMediaPlayer.getMetadata();
+				
+				//mMediaPlayer.start();
+				
+				//mMediaPlayer = new MediaPlayer(getApplicationContext());
+				//mMediaPlayer.setDataSource(path);
+				//mMediaPlayer.prepare();
+				//mMediaPlayer.start();
 
 			} catch (IllegalArgumentException e) {
 				e.printStackTrace();
@@ -72,6 +119,7 @@ public class HLSPlayerService extends Service {
 	private OnErrorListener onErrorListener = new OnErrorListener() {
 		@Override
 		public boolean onError(MediaPlayer mp, int what, int extra) {
+			Log.e(TAG, "Error en el player ");
 			return true;
 		}
 	};
@@ -91,6 +139,10 @@ public class HLSPlayerService extends Service {
 				mMediaPlayer.stop();
 				mMediaPlayer.release();
 				mMediaPlayer = null;
+			} else {
+				mMediaPlayer.stop();
+				mMediaPlayer.release();
+				mMediaPlayer = null;
 			}
 		}
 	}
@@ -101,8 +153,9 @@ public class HLSPlayerService extends Service {
 
 	@Override
 	public void onDestroy() {
-		super.onDestroy();
+		Log.i(TAG, "Destroy en el Servicio");
 		stopMediaPlayer();
+		super.onDestroy();
 	}
 	
 	public boolean isPlaying(){
@@ -111,6 +164,10 @@ public class HLSPlayerService extends Service {
 		} else {
 			return false;
 		}
+	}
+	
+	public void setVolume(float volume){
+		mMediaPlayer.setVolume(volume, volume);
 	}
 	
 
