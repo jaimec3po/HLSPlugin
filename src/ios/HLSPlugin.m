@@ -101,6 +101,7 @@ static MPMoviePlayerController *moviePlayer = nil;
         NSLog(@"%@",@"Stop ");
         [moviePlayer stop];
         moviePlayer = nil;
+        
     }
     
 }
